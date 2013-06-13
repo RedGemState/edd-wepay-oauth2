@@ -24,6 +24,8 @@ final class Astoundify_WePay_oAuth2 {
 	 */
 	private static $instance;
 
+	private $creds;
+
 	/**
 	 * Main Astoundify_WePay_oAuth2 Instance
 	 *
@@ -90,7 +92,16 @@ final class Astoundify_WePay_oAuth2 {
 	 * @return void
 	 */
 	private function includes() {
-		
+		global $edd_wepay;
+
+		require $edd_wepay->plugin_dir . '/vendor/wepay.php';
+
+		$this->creds = $edd_wepay->get_api_credentials();
+
+		if( edd_is_test_mode() )
+			Wepay::useStaging( $this->creds['client_id'], $this->creds['client_secret'] );
+		else
+			Wepay::useProduction( $this->creds['client_id'], $this->creds['client_secret'] );
 	}
 
 	/**
@@ -101,13 +112,71 @@ final class Astoundify_WePay_oAuth2 {
 	 * @return void
 	 */
 	private function setup_actions() {
-		
+		add_filter( 'atcf_shortcode_submit_hide', array( $this, 'shortcode_submit_hide' ) );
+		add_action( 'template_redirect', array( $this, 'wepay_listener' ) );
 
 		$this->load_textdomain();
 
 		if ( ! is_admin() )
 			return;
 
+	}
+
+	function wepay_listener() {
+		global $edd_options, $edd_wepay;
+
+		if ( ! is_page( $edd_options[ 'submit_page' ] ) )
+			return;
+
+		if ( ! isset( $_GET[ 'code' ] ) )
+			return;
+
+		$info = WePay::getToken( $_GET[ 'code' ], get_permalink() );
+		
+		if ( $info ) {
+			$access_token = $info->access_token;
+
+			$wepay = new WePay( $access_token );
+
+			$response = $wepay->request( 'account/create/', array(
+				'name'          => get_bloginfo( 'name' ),
+				'description'   => get_bloginfo( 'description' )
+			) );
+
+			$user = wp_get_current_user();
+
+			update_user_meta( $user->ID, 'wepay_account_id', $response->account_id );
+			update_user_meta( $user->ID, 'wepay_access_token', $access_token );
+			update_user_meta( $user->ID, 'wepay_account_uri', $response->account_uri );
+		} else {
+			
+		}
+	}
+
+	public function shortcode_submit_hide() {
+		$user = wp_get_current_user();
+
+		if ( ! $user->wepay_account_id ) {
+			add_action( 'atcf_shortcode_submit_hidden', array( $this, 'send_to_wepay' ) );
+
+			return true;
+		}
+
+		return false;
+	}
+
+	public function send_to_wepay() {
+		echo '<p>' . sprintf(  __( 'Before you may begin, you must first create an account on our payment processing service, <a href="http://wepay.com">WePay</a>. <a href="%s">Create an account &rarr;</a>', 'awpo2' ), $this->send_to_wepay_url() ) . '</p>';
+	}
+
+	public function send_to_wepay_url() {
+		global $edd_wepay;
+
+		$wepay = new WePay( $this->creds[ 'access_token' ] );
+
+		$uri = WePay::getAuthorizationUri( array( 'manage_accounts', 'collect_payments', 'preapprove_payments', 'send_money' ), get_permalink() );
+
+		return esc_url( $uri );
 	}
 
 	/**
@@ -146,7 +215,7 @@ final class Astoundify_WePay_oAuth2 {
  *
  * Example: <?php $awpo2 = awpo2(); ?>
  *
- * @since Appthemer CrowdFunding 0.1-alpha
+ * @since Astoundify_WePay_oAuth2 0.1
  *
  * @return The one true Astoundify WePay oAuth2 Crowdfunding instance
  */
