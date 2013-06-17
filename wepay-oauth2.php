@@ -112,7 +112,7 @@ final class Astoundify_WePay_oAuth2 {
 	 * @return void
 	 */
 	private function setup_actions() {
-		add_filter( 'atcf_shortcode_submit_hide', array( $this, 'shortcode_submit_hide' ) );
+		add_filter( 'awpo2_shortcode_submit_hide', array( $this, 'shortcode_submit_hide' ) );
 		add_action( 'template_redirect', array( $this, 'wepay_listener' ) );
 
 		$this->load_textdomain();
@@ -157,7 +157,7 @@ final class Astoundify_WePay_oAuth2 {
 		$user = wp_get_current_user();
 
 		if ( ! $user->wepay_account_id ) {
-			add_action( 'atcf_shortcode_submit_hidden', array( $this, 'send_to_wepay' ) );
+			add_action( 'awpo2_shortcode_submit_hidden', array( $this, 'send_to_wepay' ) );
 
 			return true;
 		}
@@ -232,24 +232,20 @@ awpo2();
  *
  * @return void
  */
-function atcf_shortcode_submit_field_wepay_creds( $atts, $campaign ) {
-	if ( $atts[ 'editing' ] ) {
-		$access_token = $campaign->__get( 'wepay_access_token' );
-		$account_id   = $campaign->__get( 'wepay_account_id' );
-	}
-?>
-	<p class="atcf-submit-campaign-wepay-account-id">
-		<label for="wepay_account_id"><?php _e( 'WePay Account ID:', 'atcf' ); ?></label>
-		<input type="text" name="wepay_account_id" id="wepay_account_id" value="<?php echo $atts[ 'editing' ] ? $account_id : null; ?>" />
-	</p>
+function awpo2_shortcode_submit_field_wepay_creds( $atts, $campaign ) {
+	$user = wp_get_current_user();
 
-	<p class="atcf-submit-campaign-wepay-access-token">
-		<label for="wepay_access_token"><?php _e( 'WePay Access Token:', 'atcf' ); ?></label>
-		<input type="text" name="wepay_access_token" id="wepay_access_token" value="<?php echo $atts[ 'editing' ] ? $access_token : null; ?>" />
-	</p>
+	$access_token = $user->__get( 'wepay_access_token' );
+	$account_id   = $user->__get( 'wepay_account_id' );
+	$account_uri  = $user->__get( 'wepay_account_uri' );
+?>
+	<p><?php printf( __( 'Funds will be sent to your <a href="%s">WePay</a> account.', 'awpo2' ), $account_uri ); ?></p>
+
+	<input type="hidden" name="wepay_account_id" id="wepay_account_id" value="<?php echo $account_id; ?>" />
+	<input type="hidden" name="wepay_access_token" id="wepay_access_token" value="<?php echo $access_token; ?>" />
 <?php
 }
-add_action( 'atcf_shortcode_submit_fields', 'atcf_shortcode_submit_field_wepay_creds', 105, 2 );
+add_action( 'awpo2_shortcode_submit_fields', 'awpo2_shortcode_submit_field_wepay_creds', 105, 2 );
 
 /**
  * PayPal Adaptive Payments field on backend.
@@ -258,22 +254,24 @@ add_action( 'atcf_shortcode_submit_fields', 'atcf_shortcode_submit_field_wepay_c
  *
  * @return void
  */
-function atcf_metabox_campaign_info_after_wepay_creds( $campaign ) {
-	$access_token = $campaign->__get( 'wepay_access_token' );
-	$account_id   = $campaign->__get( 'wepay_account_id' );
+function awpo2_metabox_campaign_info_after_wepay_creds( $campaign ) {
+	$user         = get_user_by( 'id', get_post_field( 'post_author', $campaign->ID ) );
+
+	$access_token = $user->__get( 'wepay_access_token' );
+	$account_id   = $user->__get( 'wepay_account_id' );
 ?>
 	<p>
-		<strong><label for="wepay_account_id"><?php _e( 'WePay Account ID:', 'atcf' ); ?></label></strong><br />
+		<strong><label for="wepay_account_id"><?php _e( 'WePay Account ID:', 'awpo2' ); ?></label></strong><br />
 		<input type="text" name="wepay_account_id" id="wepay_account_id" class="regular-text" value="<?php echo esc_attr( $account_id ); ?>" />
 	</p>
 
 	<p>
-		<strong><label for="wepay_access_token"><?php _e( 'WePay Access Token:', 'atcf' ); ?></label></strong><br />
+		<strong><label for="wepay_access_token"><?php _e( 'WePay Access Token:', 'awpo2' ); ?></label></strong><br />
 		<input type="text" name="wepay_access_token" id="wepay_access_token" class="regular-text" value="<?php echo esc_attr( $access_token ); ?>" />
 	</p>
 <?php
 }
-add_action( 'atcf_metabox_campaign_info_after', 'atcf_metabox_campaign_info_after_wepay_creds' );
+add_action( 'awpo2_metabox_campaign_info_after', 'awpo2_metabox_campaign_info_after_wepay_creds' );
 
 /**
  * Save WePay on the backend.
@@ -282,13 +280,13 @@ add_action( 'atcf_metabox_campaign_info_after', 'atcf_metabox_campaign_info_afte
  *
  * @return void
  */
-function atcf_metabox_save_wepay( $fields ) {
+function awpo2_metabox_save_wepay( $fields ) {
 	$fields[] = 'wepay_account_id';
 	$fields[] = 'wepay_access_token';
 
 	return $fields;
 }
-add_filter( 'edd_metabox_fields_save', 'atcf_metabox_save_wepay' );
+add_filter( 'edd_metabox_fields_save', 'awpo2_metabox_save_wepay' );
 
 /**
  * Figure out the WePay account info to send the funds to.
@@ -297,7 +295,7 @@ add_filter( 'edd_metabox_fields_save', 'atcf_metabox_save_wepay' );
  *
  * @return $creds
  */
-function atcf_gateway_wepay_edd_wepay_get_api_creds( $creds ) {
+function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds ) {
 	$cart_items  = edd_get_cart_contents();
 	$campaign_id = null;
 
@@ -310,17 +308,19 @@ function atcf_gateway_wepay_edd_wepay_get_api_creds( $creds ) {
 		break;
 	}
 
-	$campaign = atcf_get_campaign( $campaign_id );
+	$campaign = awpo2_get_campaign( $campaign_id );
 
-	$access_token = $campaign->__get( 'wepay_access_token' );
-	$account_id   = $campaign->__get( 'wepay_account_id' );
+	$user         = get_user_by( 'id', get_post_field( 'post_author', $campaign->ID ) );
+
+	$access_token = $user->__get( 'wepay_access_token' );
+	$account_id   = $user->__get( 'wepay_account_id' );
 
 	$creds[ 'access_token' ] = trim( $access_token );
 	$creds[ 'account_id' ]   = trim( $account_id );
 
 	return $creds;
 }
-add_filter( 'edd_wepay_get_api_creds', 'atcf_gateway_wepay_edd_wepay_get_api_creds' );
+add_filter( 'edd_wepay_get_api_creds', 'awpo2_gateway_wepay_edd_wepay_get_api_creds' );
 
 /**
  * Additional WePay settings needed by Crowdfunding
@@ -330,21 +330,19 @@ add_filter( 'edd_wepay_get_api_creds', 'atcf_gateway_wepay_edd_wepay_get_api_cre
  * @param array $settings Existing WePay settings
  * @return array $settings Modified WePay settings
  */
-function atcf_gateway_wepay_settings( $settings ) {
+function awpo2_gateway_wepay_settings( $settings ) {
 
-	if ( atcf_gateway_wepay_is_specific() ) {
-		$settings[ 'wepay_app_fee' ] = array(
-			'id' => 'wepay_app_fee',
-			'name'  => __( 'Site Fee', 'atcf' ),
-			'desc'  => '% <span class="description">' . __( 'The percentage of each pledge amount the site keeps (on top of WePay fees)', 'atcf' ) . '</span>',
-			'type'  => 'text',
-			'size'  => 'small'
-		);
-	}
+	$settings[ 'wepay_app_fee' ] = array(
+		'id' => 'wepay_app_fee',
+		'name'  => __( 'Site Fee', 'awpo2' ),
+		'desc'  => '% <span class="description">' . __( 'The percentage of each pledge amount the site keeps (on top of WePay fees)', 'awpo2' ) . '</span>',
+		'type'  => 'text',
+		'size'  => 'small'
+	);
 
 	return $settings;
 }
-add_filter( 'edd_gateway_wepay_settings', 'atcf_gateway_wepay_settings' );
+add_filter( 'edd_gateway_wepay_settings', 'awpo2_gateway_wepay_settings' );
 
 /**
  * Calculate a fee to keep for the site.
@@ -353,7 +351,7 @@ add_filter( 'edd_gateway_wepay_settings', 'atcf_gateway_wepay_settings' );
  *
  * @return $args
  */
-function atcf_gateway_wepay_edd_wepay_checkout_args( $args ) {
+function awpo2_gateway_wepay_edd_wepay_checkout_args( $args ) {
 	global $edd_options;
 
 	if ( '' == $edd_options[ 'wepay_app_fee' ] )
@@ -368,4 +366,4 @@ function atcf_gateway_wepay_edd_wepay_checkout_args( $args ) {
 
 	return $args;
 }
-add_filter( 'edd_wepay_checkout_args', 'atcf_gateway_wepay_edd_wepay_checkout_args' );
+add_filter( 'edd_wepay_checkout_args', 'awpo2_gateway_wepay_edd_wepay_checkout_args' );
