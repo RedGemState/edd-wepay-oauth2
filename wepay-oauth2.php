@@ -15,7 +15,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 /**
  * Main WePay oAuth2 Crowdfunding Class
  *
- * @since Astoundify_WePay_oAuth2 0.1
+ * @since Astoundify WePay oAuth2 0.1
  */
 final class Astoundify_WePay_oAuth2 {
 
@@ -32,7 +32,7 @@ final class Astoundify_WePay_oAuth2 {
 	 * Ensures that only one instance of Crowd Funding exists in memory at any one
 	 * time. Also prevents needing to define globals all over the place.
 	 *
-	 * @since Astoundify_WePay_oAuth2 0.1
+	 * @since Astoundify WePay oAuth2 0.1
 	 *
 	 * @return The one true Crowd Funding
 	 */
@@ -53,7 +53,7 @@ final class Astoundify_WePay_oAuth2 {
 	 * Set some smart defaults to class variables. Allow some of them to be
 	 * filtered to allow for early overriding.
 	 *
-	 * @since Astoundify_WePay_oAuth2 0.1
+	 * @since Astoundify WePay oAuth2 0.1
 	 *
 	 * @return void
 	 */
@@ -70,16 +70,7 @@ final class Astoundify_WePay_oAuth2 {
 		$this->plugin_dir   = apply_filters( 'awpo2_plugin_dir_path',  plugin_dir_path( $this->file ) );
 		$this->plugin_url   = apply_filters( 'awpo2_plugin_dir_url',   plugin_dir_url ( $this->file ) );
 
-		// Includes
-		$this->includes_dir = apply_filters( 'awpo2_includes_dir', trailingslashit( $this->plugin_dir . 'includes'  ) );
-		$this->includes_url = apply_filters( 'awpo2_includes_url', trailingslashit( $this->plugin_url . 'includes'  ) );
-
-		$this->template_dir = apply_filters( 'awpo2_templates_dir', trailingslashit( $this->plugin_dir . 'templates'  ) );
-
-		// Languages
 		$this->lang_dir     = apply_filters( 'awpo2_lang_dir',     trailingslashit( $this->plugin_dir . 'languages' ) );
-
-		/** Misc **************************************************************/
 
 		$this->domain       = 'awpo2'; 
 	}
@@ -87,14 +78,12 @@ final class Astoundify_WePay_oAuth2 {
 	/**
 	 * Include required files.
 	 *
-	 * @since Astoundify_WePay_oAuth2 0.1
+	 * @since Astoundify WePay oAuth2 0.1
 	 *
 	 * @return void
 	 */
 	private function includes() {
-		global $edd_wepay;
-
-		require $edd_wepay->plugin_dir . '/vendor/wepay.php';
+		require ( $this->plugin_dir .  '/vendor/wepay.php' );
 
 		$this->creds = $edd_wepay->get_api_credentials();
 
@@ -107,12 +96,12 @@ final class Astoundify_WePay_oAuth2 {
 	/**
 	 * Setup the default hooks and actions
 	 *
-	 * @since Astoundify_WePay_oAuth2 0.1
+	 * @since Astoundify WePay oAuth2 0.1
 	 *
 	 * @return void
 	 */
 	private function setup_actions() {
-		add_filter( 'awpo2_shortcode_submit_hide', array( $this, 'shortcode_submit_hide' ) );
+		add_filter( 'atcf_shortcode_submit_hide', array( $this, 'shortcode_submit_hide' ) );
 		add_action( 'template_redirect', array( $this, 'wepay_listener' ) );
 
 		$this->load_textdomain();
@@ -182,7 +171,7 @@ final class Astoundify_WePay_oAuth2 {
 	/**
 	 * Loads the plugin language files
 	 *
-	 * @since Astoundify_WePay_oAuth2 0.1
+	 * @since Astoundify WePay oAuth2 0.1
 	 */
 	public function load_textdomain() {
 		// Traditional WordPress plugin locale filter
@@ -215,11 +204,14 @@ final class Astoundify_WePay_oAuth2 {
  *
  * Example: <?php $awpo2 = awpo2(); ?>
  *
- * @since Astoundify_WePay_oAuth2 0.1
+ * @since Astoundify WePay oAuth2 0.1
  *
  * @return The one true Astoundify WePay oAuth2 Crowdfunding instance
  */
 function awpo2() {
+	if ( ! class_exists( 'Easy_Digital_Downloads' ) )
+		return;
+	
 	return Astoundify_WePay_oAuth2::instance();
 }
 
@@ -308,7 +300,7 @@ function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds ) {
 		break;
 	}
 
-	$campaign = awpo2_get_campaign( $campaign_id );
+	$campaign     = atcf_get_campaign( $campaign_id );
 
 	$user         = get_user_by( 'id', get_post_field( 'post_author', $campaign->ID ) );
 
