@@ -26,6 +26,8 @@ final class Astoundify_WePay_oAuth2 {
 
 	private $creds;
 
+	private $edd_wepay;
+
 	/**
 	 * Main Astoundify_WePay_oAuth2 Instance
 	 *
@@ -37,6 +39,9 @@ final class Astoundify_WePay_oAuth2 {
 	 * @return The one true Crowd Funding
 	 */
 	public static function instance() {
+		if ( ! class_exists( 'ATCF_CrowdFunding' ) || ! class_exists( 'Easy_Digital_Downloads' ) )
+			return;
+
 		if ( ! isset ( self::$instance ) ) {
 			self::$instance = new Astoundify_WePay_oAuth2;
 			self::$instance->setup_globals();
@@ -85,7 +90,8 @@ final class Astoundify_WePay_oAuth2 {
 	private function includes() {
 		require ( $this->plugin_dir .  '/vendor/wepay.php' );
 
-		$this->creds = $edd_wepay->get_api_credentials();
+		$this->edd_wepay = new EDD_WePay_Gateway;
+		$this->creds     = $this->edd_wepay->get_api_credentials();
 
 		if( edd_is_test_mode() )
 			Wepay::useStaging( $this->creds['client_id'], $this->creds['client_secret'] );
@@ -108,7 +114,6 @@ final class Astoundify_WePay_oAuth2 {
 
 		if ( ! is_admin() )
 			return;
-
 	}
 
 	function wepay_listener() {
@@ -158,7 +163,7 @@ final class Astoundify_WePay_oAuth2 {
 		echo '<p>' . sprintf(  __( 'Before you may begin, you must first create an account on our payment processing service, <a href="http://wepay.com">WePay</a>. <a href="%s">Create an account &rarr;</a>', 'awpo2' ), $this->send_to_wepay_url() ) . '</p>';
 	}
 
-	public function send_to_wepay_url() {
+	private function send_to_wepay_url() {
 		global $edd_wepay;
 
 		$wepay = new WePay( $this->creds[ 'access_token' ] );
@@ -209,9 +214,6 @@ final class Astoundify_WePay_oAuth2 {
  * @return The one true Astoundify WePay oAuth2 Crowdfunding instance
  */
 function awpo2() {
-	if ( ! class_exists( 'Easy_Digital_Downloads' ) )
-		return;
-	
 	return Astoundify_WePay_oAuth2::instance();
 }
 
@@ -263,7 +265,7 @@ function awpo2_metabox_campaign_info_after_wepay_creds( $campaign ) {
 	</p>
 <?php
 }
-add_action( 'awpo2_metabox_campaign_info_after', 'awpo2_metabox_campaign_info_after_wepay_creds' );
+add_action( 'atcf_metabox_campaign_info_after', 'awpo2_metabox_campaign_info_after_wepay_creds' );
 
 /**
  * Save WePay on the backend.
