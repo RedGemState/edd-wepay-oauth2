@@ -26,8 +26,6 @@ final class Astoundify_WePay_oAuth2 {
 
 	private $creds;
 
-	private $edd_wepay;
-
 	/**
 	 * Main Astoundify_WePay_oAuth2 Instance
 	 *
@@ -88,10 +86,12 @@ final class Astoundify_WePay_oAuth2 {
 	 * @return void
 	 */
 	private function includes() {
-		require ( $this->plugin_dir .  '/vendor/wepay.php' );
+		global $edd_wepay;
 
-		$this->edd_wepay = new EDD_WePay_Gateway;
-		$this->creds     = $this->edd_wepay->get_api_credentials();
+		if ( ! class_exists( 'WePayException' ) )
+			require ( $this->plugin_dir .  '/vendor/wepay.php' );
+
+		$this->creds = $edd_wepay->get_api_credentials();
 
 		if( edd_is_test_mode() )
 			Wepay::useStaging( $this->creds['client_id'], $this->creds['client_secret'] );
@@ -128,16 +128,14 @@ final class Astoundify_WePay_oAuth2 {
 		$info = WePay::getToken( $_GET[ 'code' ], get_permalink() );
 		
 		if ( $info ) {
+			$user         = wp_get_current_user();
 			$access_token = $info->access_token;
-
-			$wepay = new WePay( $access_token );
+			$wepay        = new WePay( $access_token );
 
 			$response = $wepay->request( 'account/create/', array(
-				'name'          => get_bloginfo( 'name' ),
-				'description'   => get_bloginfo( 'description' )
+				'name'          => $user->user_email,
+				'description'   => $user->user_nicename
 			) );
-
-			$user = wp_get_current_user();
 
 			update_user_meta( $user->ID, 'wepay_account_id', $response->account_id );
 			update_user_meta( $user->ID, 'wepay_access_token', $access_token );
@@ -151,7 +149,7 @@ final class Astoundify_WePay_oAuth2 {
 		$user = wp_get_current_user();
 
 		if ( ! $user->wepay_account_id ) {
-			add_action( 'awpo2_shortcode_submit_hidden', array( $this, 'send_to_wepay' ) );
+			add_action( 'atcf_shortcode_submit_hidden', array( $this, 'send_to_wepay' ) );
 
 			return true;
 		}
@@ -160,12 +158,12 @@ final class Astoundify_WePay_oAuth2 {
 	}
 
 	public function send_to_wepay() {
-		echo '<p>' . sprintf(  __( 'Before you may begin, you must first create an account on our payment processing service, <a href="http://wepay.com">WePay</a>. <a href="%s">Create an account &rarr;</a>', 'awpo2' ), $this->send_to_wepay_url() ) . '</p>';
+		echo '<p>' . sprintf(  __( 'Before you may begin, you must first create an account on our payment processing service, <a href="http://wepay.com">WePay</a>.', 'awpo2' ) ) . '</p>';
+
+		echo '<p>' . sprintf( __( '<a href="%s" class="button wepay-oauth-create-account">Create an account &rarr;</a>', 'awpo2' ), $this->send_to_wepay_url() ) . '</p>';
 	}
 
 	private function send_to_wepay_url() {
-		global $edd_wepay;
-
 		$wepay = new WePay( $this->creds[ 'access_token' ] );
 
 		$uri = WePay::getAuthorizationUri( array( 'manage_accounts', 'collect_payments', 'preapprove_payments', 'send_money' ), get_permalink() );
@@ -216,8 +214,7 @@ final class Astoundify_WePay_oAuth2 {
 function awpo2() {
 	return Astoundify_WePay_oAuth2::instance();
 }
-
-awpo2();
+add_action( 'init', 'awpo2' );
 
 /**
  * WePay fields on frontend submit and edit.
@@ -239,7 +236,7 @@ function awpo2_shortcode_submit_field_wepay_creds( $atts, $campaign ) {
 	<input type="hidden" name="wepay_access_token" id="wepay_access_token" value="<?php echo $access_token; ?>" />
 <?php
 }
-add_action( 'awpo2_shortcode_submit_fields', 'awpo2_shortcode_submit_field_wepay_creds', 105, 2 );
+add_action( 'atcf_shortcode_submit_fields', 'awpo2_shortcode_submit_field_wepay_creds', 105, 2 );
 
 /**
  * PayPal Adaptive Payments field on backend.
@@ -290,6 +287,8 @@ add_filter( 'edd_metabox_fields_save', 'awpo2_metabox_save_wepay' );
  * @return $creds
  */
 function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds ) {
+	global $edd_wepay;
+
 	$cart_items  = edd_get_cart_contents();
 	$campaign_id = null;
 
