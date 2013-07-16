@@ -148,7 +148,7 @@ final class Astoundify_WePay_oAuth2 {
 
 	private function send_to_wepay_url() {
 		global $edd_wepay;
-		
+
 		if ( ! class_exists( 'WePay' ) )
 			require ( $this->plugin_dir .  '/vendor/wepay.php' );
 
@@ -297,6 +297,8 @@ function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds, $payment_id ) {
 	if ( empty( $cart_items ) && ! empty( $session ) ) {
 		$cart_items = $session[ 'downloads' ];
 	} else if ( isset( $_GET[ 'edd-action' ] ) && 'charge_wepay_preapproval' == $_GET[ 'edd-action' ] && isset ( $_GET[ 'payment_id' ] ) ) {
+		$cart_iterms = edd_get_payment_meta_downloads( absint( $_GET[ 'payment_id' ] ) );
+	} else if ( isset( $_GET[ 'edd-action' ] ) && 'cancel_wepay_preapproval' == $_GET[ 'edd-action' ] && isset ( $_GET[ 'payment_id' ] ) ) {
 		$cart_iterms = edd_get_payment_meta_downloads( absint( $_GET[ 'payment_id' ] ) );
 	} else if ( $payment_id ) {
 		$cart_iterms = edd_get_payment_meta_downloads( $payment_id );
