@@ -41,13 +41,16 @@ final class Astoundify_WePay_oAuth2 {
 			return;
 
 		if ( ! isset ( self::$instance ) ) {
-			self::$instance = new Astoundify_WePay_oAuth2;
-			self::$instance->setup_globals();
-			self::$instance->includes();
-			self::$instance->setup_actions();
+			self::$instance = new self;
 		}
 
 		return self::$instance;
+	}
+
+	private function __construct() {
+		$this->setup_globals();
+		$this->setup_actions();
+		$this->load_textdomain();
 	}
 
 	/** Private Methods *******************************************************/
@@ -61,13 +64,6 @@ final class Astoundify_WePay_oAuth2 {
 	 * @return void
 	 */
 	private function setup_globals() {
-		/** Versions **********************************************************/
-
-		$this->version    = '0.1';
-		$this->db_version = '1';
-
-		/** Paths *************************************************************/
-
 		$this->file         = __FILE__;
 		$this->basename     = apply_filters( 'awpo2_plugin_basenname', plugin_basename( $this->file ) );
 		$this->plugin_dir   = apply_filters( 'awpo2_plugin_dir_path',  plugin_dir_path( $this->file ) );
@@ -76,27 +72,6 @@ final class Astoundify_WePay_oAuth2 {
 		$this->lang_dir     = apply_filters( 'awpo2_lang_dir',     trailingslashit( $this->plugin_dir . 'languages' ) );
 
 		$this->domain       = 'awpo2'; 
-	}
-
-	/**
-	 * Include required files.
-	 *
-	 * @since Astoundify WePay oAuth2 0.1
-	 *
-	 * @return void
-	 */
-	private function includes() {
-		global $edd_wepay;
-
-		if ( ! class_exists( 'WePayException' ) )
-			require ( $this->plugin_dir .  '/vendor/wepay.php' );
-
-		$this->creds = $edd_wepay->get_api_credentials();
-
-		if( edd_is_test_mode() )
-			Wepay::useStaging( $this->creds['client_id'], $this->creds['client_secret'] );
-		else
-			Wepay::useProduction( $this->creds['client_id'], $this->creds['client_secret'] );
 	}
 
 	/**
@@ -110,8 +85,6 @@ final class Astoundify_WePay_oAuth2 {
 		add_filter( 'atcf_shortcode_submit_hide', array( $this, 'shortcode_submit_hide' ) );
 		add_action( 'template_redirect', array( $this, 'wepay_listener' ) );
 
-		$this->load_textdomain();
-
 		if ( ! is_admin() )
 			return;
 	}
@@ -124,6 +97,16 @@ final class Astoundify_WePay_oAuth2 {
 
 		if ( ! isset( $_GET[ 'code' ] ) )
 			return;
+
+		if ( ! class_exists( 'WePay' ) )
+			require ( $this->plugin_dir .  '/vendor/wepay.php' );
+
+		$this->creds = $edd_wepay->get_api_credentials();
+
+		if( edd_is_test_mode() )
+			Wepay::useStaging( $this->creds['client_id'], $this->creds['client_secret'] );
+		else
+			Wepay::useProduction( $this->creds['client_id'], $this->creds['client_secret'] );
 
 		$info = WePay::getToken( $_GET[ 'code' ], get_permalink() );
 		
@@ -164,6 +147,18 @@ final class Astoundify_WePay_oAuth2 {
 	}
 
 	private function send_to_wepay_url() {
+		global $edd_wepay;
+		
+		if ( ! class_exists( 'WePay' ) )
+			require ( $this->plugin_dir .  '/vendor/wepay.php' );
+
+		$this->creds = $edd_wepay->get_api_credentials();
+
+		if( edd_is_test_mode() )
+			Wepay::useStaging( $this->creds['client_id'], $this->creds['client_secret'] );
+		else
+			Wepay::useProduction( $this->creds['client_id'], $this->creds['client_secret'] );
+
 		$wepay = new WePay( $this->creds[ 'access_token' ] );
 
 		$uri = WePay::getAuthorizationUri( array( 'manage_accounts', 'collect_payments', 'preapprove_payments', 'send_money' ), get_permalink() );
@@ -246,6 +241,9 @@ add_action( 'atcf_shortcode_submit_fields', 'awpo2_shortcode_submit_field_wepay_
  * @return void
  */
 function awpo2_metabox_campaign_info_after_wepay_creds( $campaign ) {
+	if ( 'auto-draft' == $campaign->data->post_status )
+		return;
+
 	$user         = get_user_by( 'id', get_post_field( 'post_author', $campaign->ID ) );
 
 	$access_token = $user->__get( 'wepay_access_token' );
@@ -286,14 +284,23 @@ add_filter( 'edd_metabox_fields_save', 'awpo2_metabox_save_wepay' );
  *
  * @return $creds
  */
-function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds ) {
+function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds, $payment_id ) {
 	global $edd_wepay;
 
 	$cart_items  = edd_get_cart_contents();
+	$session     = edd_get_purchase_session();
 	$campaign_id = null;
 
-	if ( empty( $cart_items ) )
-		return $creds;
+	/**
+	 * No cart items, check session
+	 */
+	if ( empty( $cart_items ) && ! empty( $session ) ) {
+		$cart_items = $session[ 'downloads' ];
+	} else if ( isset( $_GET[ 'edd-action' ] ) && 'charge_wepay_preapproval' == $_GET[ 'edd-action' ] && isset ( $_GET[ 'payment_id' ] ) ) {
+		$cart_iterms = edd_get_payment_meta_downloads( absint( $_GET[ 'payment_id' ] ) );
+	} else if ( $payment_id ) {
+		$cart_iterms = edd_get_payment_meta_downloads( $payment_id );
+	}
 
 	foreach ( $cart_items as $item ) {
 		$campaign_id = $item[ 'id' ];
@@ -313,7 +320,7 @@ function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds ) {
 
 	return $creds;
 }
-add_filter( 'edd_wepay_get_api_creds', 'awpo2_gateway_wepay_edd_wepay_get_api_creds' );
+add_filter( 'edd_wepay_get_api_creds', 'awpo2_gateway_wepay_edd_wepay_get_api_creds', 10, 2 );
 
 /**
  * Additional WePay settings needed by Crowdfunding
