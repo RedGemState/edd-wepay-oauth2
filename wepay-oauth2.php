@@ -315,7 +315,7 @@ function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds, $payment_id ) {
 
 	$campaign     = atcf_get_campaign( $campaign_id );
 
-	if ( 0 == $campaign )
+	if ( 0 == $campaign->ID )
 		return $creds;
 
 	$user         = get_user_by( 'id', get_post_field( 'post_author', $campaign->ID ) );
