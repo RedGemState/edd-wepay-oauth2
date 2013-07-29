@@ -143,7 +143,7 @@ final class Astoundify_WePay_oAuth2 {
 	public function send_to_wepay() {
 		echo '<p>' . sprintf(  __( 'Before you may begin, you must first create an account on our payment processing service, <a href="http://wepay.com">WePay</a>.', 'awpo2' ) ) . '</p>';
 
-		echo '<p>' . sprintf( __( '<a href="%s" class="button wepay-oauth-create-account">Create an account &rarr;</a>', 'awpo2' ), $this->send_to_wepay_url() ) . '</p>';
+		echo '<p>' . sprintf( __( '<a href="%s" class="button wepay-oauth-create-account">Create an account on WePay &rarr;</a>', 'awpo2' ), $this->send_to_wepay_url() ) . '</p>';
 	}
 
 	private function send_to_wepay_url() {
@@ -159,7 +159,7 @@ final class Astoundify_WePay_oAuth2 {
 		else
 			Wepay::useProduction( $this->creds['client_id'], $this->creds['client_secret'] );
 
-		$wepay = new WePay( $this->creds[ 'access_token' ] );
+		//$wepay = new WePay( $this->creds[ 'access_token' ] );
 
 		$uri = WePay::getAuthorizationUri( array( 'manage_accounts', 'collect_payments', 'preapprove_payments', 'send_money' ), get_permalink() );
 
@@ -304,6 +304,9 @@ function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds, $payment_id ) {
 		$cart_iterms = edd_get_payment_meta_downloads( $payment_id );
 	}
 
+	if ( ! $cart_items || empty( $cart_items ) )
+		return $creds;
+
 	foreach ( $cart_items as $item ) {
 		$campaign_id = $item[ 'id' ];
 
@@ -337,7 +340,7 @@ function awpo2_gateway_wepay_settings( $settings ) {
 	$settings[ 'wepay_app_fee' ] = array(
 		'id' => 'wepay_app_fee',
 		'name'  => __( 'Site Fee', 'awpo2' ),
-		'desc'  => '% <span class="description">' . __( 'The percentage of each pledge amount the site keeps (on top of WePay fees)', 'awpo2' ) . '</span>',
+		'desc'  => '% <span class="description">' . __( 'The percentage of each pledge amount the site keeps (on top of WePay fees) no more than 20%.', 'awpo2' ) . '</span>',
 		'type'  => 'text',
 		'size'  => 'small'
 	);
