@@ -34,7 +34,7 @@ We currently have two compatible themes that have been released:
 
 = What fields do I need to fill out? =
 
-In the Payment Gatways settings, simply fill out the Client ID and the Client Secret given to you by WePay in your API Application. The Access ID and Access Token will be added to each campaign when the campaign author creates their WePay account through the submission process.
+In the Payment Gateways settings, simply fill out the Client ID and the Client Secret given to you by WePay in your API Application. The Access ID and Access Token will be added to each campaign when the campaign author creates their WePay account through the submission process.
 
 == Changelog ==
 
