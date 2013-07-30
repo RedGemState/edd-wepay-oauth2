@@ -32,6 +32,14 @@ We currently have two compatible themes that have been released:
 
 == Frequently Asked Questions ==
 
+= What is required to use this extension? =
+
+The following plugins must be installed and properly configured before using this extension:
+
+1. [Easy Digital Downloads](http://wordpress.org/plugins/easy-digital-downloads/)
+2. [Crowdfunding by Astoundify](http://wordpress.org/plugins/appthemer-crowdfunding/)
+3. [WePay Gateway for EDD](https://easydigitaldownloads.com/extensions/wepay-payment-gateway/)
+
 = What fields do I need to fill out? =
 
 In the Payment Gateways settings, simply fill out the Client ID and the Client Secret given to you by WePay in your API Application. The Access ID and Access Token will be added to each campaign when the campaign author creates their WePay account through the submission process.
