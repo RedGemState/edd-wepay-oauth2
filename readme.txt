@@ -17,6 +17,13 @@ Add WePay oAuth2 support for Easy Digital Downloads WePay and Crowdfunding by As
 
 Add WePay oAuth2 support for Easy Digital Downloads WePay and Crowdfunding by Astoundify.
 
+= Where can I use this? =
+
+We currently have two compatible themes that have been released:
+
+* The first theme released is called ["Fundify"](http://themeforest.net/item/fundify-crowd-funding-wordpress-theme/4257622?ref=Astoundify) from [Astoundify](http://Astoundify.com/fundify.html) A large community crowdfunding theme, like Kickstarter or Indiegogo.
+* The second theme released is called ["Campaignify"](http://themeforest.net/item/campaignify-multipurpose-crowdfunding-theme/4725411?ref=Astoundify) from [Astoundify](http://Astoundify.com/) A multi-purpose crowdfunding theme, great for single project crowdfunding.
+
 == Installation ==
 
 1. Install and Activate
