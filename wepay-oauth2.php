@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: WePay oAuth2 for Crowdfunding
+ * Plugin Name: Easy Digital Downloads - WePay oAuth2 for Crowdfunding
  * Plugin URI:  https://github.com/astoundify
  * Description: Enable users to create accounts on WePay automatically.
  * Author:      Astoundify
@@ -89,6 +89,14 @@ final class Astoundify_WePay_oAuth2 {
 			return;
 	}
 
+	/**
+	 * When coming back from WePay, add the newly created
+	 * tokens to the user meta.
+	 *
+	 * @since Astoundify WePay oAuth2 0.1
+	 *
+	 * @return void
+	 */
 	function wepay_listener() {
 		global $edd_options, $edd_wepay;
 
@@ -128,6 +136,14 @@ final class Astoundify_WePay_oAuth2 {
 		}
 	}
 
+	/**
+	 * If the current user does not have any stored WePay information,
+	 * show them the way to WePay and hide the submission form.
+	 *
+	 * @since Astoundify WePay oAuth2 0.1
+	 *
+	 * @return boolean
+	 */
 	public function shortcode_submit_hide() {
 		$user = wp_get_current_user();
 
@@ -140,12 +156,26 @@ final class Astoundify_WePay_oAuth2 {
 		return false;
 	}
 
+	/**
+	 * Create a link that sends them to WePay to create an account.
+	 *
+	 * @since Astoundify WePay oAuth2 0.1
+	 *
+	 * @return void
+	 */
 	public function send_to_wepay() {
 		echo '<p>' . sprintf(  __( 'Before you may begin, you must first create an account on our payment processing service, <a href="http://wepay.com">WePay</a>.', 'awpo2' ) ) . '</p>';
 
-		echo '<p>' . sprintf( __( '<a href="%s" class="button wepay-oauth-create-account">Create an account on WePay &rarr;</a>', 'awpo2' ), $this->send_to_wepay_url() ) . '</p>';
+		echo '<p>' . sprintf( '<a href="%s" class="button wepay-oauth-create-account">', $this->send_to_wepay_url() ) . __( 'Create an account on WePay &rarr;', 'awpo2' ) . '</a></p>';
 	}
 
+	/**
+	 * Create the proper URL for sending to WePay
+	 *
+	 * @since Astoundify WePay oAuth2 0.1
+	 *
+	 * @return string $uri
+	 */
 	private function send_to_wepay_url() {
 		global $edd_wepay;
 
@@ -158,8 +188,6 @@ final class Astoundify_WePay_oAuth2 {
 			Wepay::useStaging( $this->creds['client_id'], $this->creds['client_secret'] );
 		else
 			Wepay::useProduction( $this->creds['client_id'], $this->creds['client_secret'] );
-
-		//$wepay = new WePay( $this->creds[ 'access_token' ] );
 
 		$uri = WePay::getAuthorizationUri( array( 'manage_accounts', 'collect_payments', 'preapprove_payments', 'send_money' ), get_permalink() );
 
@@ -214,7 +242,7 @@ add_action( 'init', 'awpo2' );
 /**
  * WePay fields on frontend submit and edit.
  *
- * @since CrowdFunding 1.3
+ * @since Astoundify WePay oAuth2 0.1
  *
  * @return void
  */
@@ -234,9 +262,9 @@ function awpo2_shortcode_submit_field_wepay_creds( $atts, $campaign ) {
 add_action( 'atcf_shortcode_submit_fields', 'awpo2_shortcode_submit_field_wepay_creds', 105, 2 );
 
 /**
- * PayPal Adaptive Payments field on backend.
+ * WePay field on backend.
  *
- * @since CrowdFunding 1.1
+ * @since Astoundify WePay oAuth2 0.1
  *
  * @return void
  */
@@ -265,7 +293,7 @@ add_action( 'atcf_metabox_campaign_info_after', 'awpo2_metabox_campaign_info_aft
 /**
  * Save WePay on the backend.
  *
- * @since CrowdFunding 1.3
+ * @since Astoundify WePay oAuth2 0.1
  *
  * @return void
  */
@@ -280,7 +308,7 @@ add_filter( 'edd_metabox_fields_save', 'awpo2_metabox_save_wepay' );
 /**
  * Figure out the WePay account info to send the funds to.
  *
- * @since CrowdFunding 1.3
+ * @since Astoundify WePay oAuth2 0.1
  *
  * @return $creds
  */
@@ -333,7 +361,7 @@ add_filter( 'edd_wepay_get_api_creds', 'awpo2_gateway_wepay_edd_wepay_get_api_cr
 /**
  * Additional WePay settings needed by Crowdfunding
  *
- * @since Appthemer Crowdfunding 1.3
+ * @since Astoundify WePay oAuth2 0.1
  *
  * @param array $settings Existing WePay settings
  * @return array $settings Modified WePay settings
@@ -343,7 +371,7 @@ function awpo2_gateway_wepay_settings( $settings ) {
 	$settings[ 'wepay_app_fee' ] = array(
 		'id' => 'wepay_app_fee',
 		'name'  => __( 'Site Fee', 'awpo2' ),
-		'desc'  => '% <span class="description">' . __( 'The percentage of each pledge amount the site keeps (on top of WePay fees) no more than 20%.', 'awpo2' ) . '</span>',
+		'desc'  => '% <span class="description">' . __( 'The percentage of each pledge amount the site keeps (no more than 20%)', 'awpo2' ) . '</span>',
 		'type'  => 'text',
 		'size'  => 'small'
 	);
@@ -355,7 +383,7 @@ add_filter( 'edd_gateway_wepay_settings', 'awpo2_gateway_wepay_settings' );
 /**
  * Calculate a fee to keep for the site.
  *
- * @since CrowdFunding 1.3
+ * @since Astoundify WePay oAuth2 0.1
  *
  * @return $args
  */
