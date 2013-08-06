@@ -1,4 +1,4 @@
-=== Easy Digital Downloads - WePay oAuth2 for Crowdfunding ===
+=== Crowdfunding WePay oAuth 2.0 by Astoundify ===
 
 Author URI: http://astoundify.com
 Plugin URI: http://astoundify.com
