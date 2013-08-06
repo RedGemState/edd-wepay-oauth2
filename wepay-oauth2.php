@@ -276,34 +276,22 @@ function awpo2_metabox_campaign_info_after_wepay_creds( $campaign ) {
 
 	$access_token = $user->__get( 'wepay_access_token' );
 	$account_id   = $user->__get( 'wepay_account_id' );
+	$account_uri  = $user->__get( 'wepay_account_uri' );
 ?>
+	<p><strong><?php printf( __( 'Funds will be sent to %s <a href="%s">WePay</a> account.', 'awpo2' ), $user->user_email, $account_uri ); ?></strong></p>
+
 	<p>
 		<strong><label for="wepay_account_id"><?php _e( 'WePay Account ID:', 'awpo2' ); ?></label></strong><br />
-		<input type="text" name="wepay_account_id" id="wepay_account_id" class="regular-text" value="<?php echo esc_attr( $account_id ); ?>" />
+		<input type="text" name="wepay_account_id" id="wepay_account_id" class="regular-text" value="<?php echo esc_attr( $account_id ); ?>" readonly="true" />
 	</p>
 
 	<p>
 		<strong><label for="wepay_access_token"><?php _e( 'WePay Access Token:', 'awpo2' ); ?></label></strong><br />
-		<input type="text" name="wepay_access_token" id="wepay_access_token" class="regular-text" value="<?php echo esc_attr( $access_token ); ?>" />
+		<input type="text" name="wepay_access_token" id="wepay_access_token" class="regular-text" value="<?php echo esc_attr( $access_token ); ?>" readonly="true" />
 	</p>
 <?php
 }
 add_action( 'atcf_metabox_campaign_info_after', 'awpo2_metabox_campaign_info_after_wepay_creds' );
-
-/**
- * Save WePay on the backend.
- *
- * @since Astoundify WePay oAuth2 0.1
- *
- * @return void
- */
-function awpo2_metabox_save_wepay( $fields ) {
-	$fields[] = 'wepay_account_id';
-	$fields[] = 'wepay_access_token';
-
-	return $fields;
-}
-add_filter( 'edd_metabox_fields_save', 'awpo2_metabox_save_wepay' );
 
 /**
  * Figure out the WePay account info to send the funds to.
