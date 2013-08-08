@@ -364,6 +364,14 @@ function awpo2_gateway_wepay_settings( $settings ) {
 		'size'  => 'small'
 	);
 
+	$settings[ 'wepay_flexible_fee' ] = array(
+		'id'   => 'wepay_flexible_fee',
+		'name' => __( 'Additional Flexible Fee', 'epap' ),
+		'desc' => __( '%. <span class="description">If a campaign is flexible, increase commission by this percent. Total can not be more than 20%</span>', 'atcf' ),
+		'type' => 'text',
+		'size' => 'small'
+	);
+
 	return $settings;
 }
 add_filter( 'edd_gateway_wepay_settings', 'awpo2_gateway_wepay_settings' );
@@ -381,7 +389,13 @@ function awpo2_gateway_wepay_edd_wepay_checkout_args( $args ) {
 	if ( '' == $edd_options[ 'wepay_app_fee' ] )
 		return $args;
 
-	$percent  = absint( $edd_options[ 'wepay_app_fee' ] ) / 100;
+	$fee = absint( $edd_options[ 'wepay_app_fee' ] );
+
+	if ( '' != $edd_optinos[ 'wepay_flexible_fee' ] ) {
+		$fee = $fee + $edd_options[ 'wepay_flexible_fee' ];
+	}
+
+	$percent  = $fee / 100;
 	$subtotal = edd_get_cart_subtotal();
 
 	$fee = $subtotal * $percent;
