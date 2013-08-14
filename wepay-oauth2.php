@@ -5,7 +5,7 @@
  * Description: Enable users to create accounts on WePay automatically.
  * Author:      Astoundify
  * Author URI:  http://astoundify.com
- * Version:     0.1
+ * Version:     0.2
  * Text Domain: awpo2
  */
 
@@ -24,6 +24,9 @@ final class Astoundify_WePay_oAuth2 {
 	 */
 	private static $instance;
 
+	/**
+	 * @var $creds
+	 */
 	private $creds;
 
 	/**
@@ -87,6 +90,41 @@ final class Astoundify_WePay_oAuth2 {
 
 		if ( ! is_admin() )
 			return;
+
+
+		add_filter( 'edd_gateway_wepay_settings', array( $this, 'gateway_settings' ) );
+
+		add_action( 'edit_user_profile', array( $this, 'profile_user_meta' ) );
+		add_action( 'show_user_profile', array( $this, 'profile_user_meta' ) );
+		add_action( 'personal_options_update', array( $this, 'profile_user_meta_update' ) );
+	}
+
+	/**
+	 * Additional WePay settings needed by Crowdfunding
+	 *
+	 * @since Astoundify WePay oAuth2 0.1
+	 *
+	 * @param array $settings Existing WePay settings
+	 * @return array $settings Modified WePay settings
+	 */
+	function gateway_settings( $settings ) {
+		$settings[ 'wepay_app_fee' ] = array(
+			'id' => 'wepay_app_fee',
+			'name'  => __( 'Site Fee', 'awpo2' ),
+			'desc'  => '% <span class="description">' . __( 'The percentage of each pledge amount the site keeps (no more than 20%)', 'awpo2' ) . '</span>',
+			'type'  => 'text',
+			'size'  => 'small'
+		);
+
+		$settings[ 'wepay_flexible_fee' ] = array(
+			'id'   => 'wepay_flexible_fee',
+			'name' => __( 'Additional Flexible Fee', 'epap' ),
+			'desc' => __( '%. <span class="description">If a campaign is flexible, increase commission by this percent. Total can not be more than 20%</span>', 'atcf' ),
+			'type' => 'text',
+			'size' => 'small'
+		);
+
+		return $settings;
 	}
 
 	/**
@@ -99,9 +137,6 @@ final class Astoundify_WePay_oAuth2 {
 	 */
 	function wepay_listener() {
 		global $edd_options, $edd_wepay;
-
-		if ( ! is_page( $edd_options[ 'submit_page' ] ) )
-			return;
 
 		if ( ! isset( $_GET[ 'code' ] ) )
 			return;
@@ -176,7 +211,7 @@ final class Astoundify_WePay_oAuth2 {
 	 *
 	 * @return string $uri
 	 */
-	private function send_to_wepay_url() {
+	public function send_to_wepay_url( $redirect = null ) {
 		global $edd_wepay;
 
 		if ( ! class_exists( 'WePay' ) )
@@ -189,9 +224,65 @@ final class Astoundify_WePay_oAuth2 {
 		else
 			Wepay::useProduction( $this->creds['client_id'], $this->creds['client_secret'] );
 
-		$uri = WePay::getAuthorizationUri( array( 'manage_accounts', 'collect_payments', 'preapprove_payments', 'send_money' ), get_permalink() );
+		if ( ! $redirect )
+			$redirect = get_permalink();
+
+		$uri = WePay::getAuthorizationUri( array( 'manage_accounts', 'collect_payments', 'preapprove_payments', 'send_money' ), $redirect );
 
 		return esc_url( $uri );
+	}
+
+	/**
+	 * Manually set the WePay information.
+	 *
+	 * @since Astoundify WePay oAuth2 0.2
+	 *
+	 * @param WP_User $profileuser User data
+	 * @return bool Always false
+	 */
+	function profile_user_meta( $profileuser ) {
+		if ( ! current_user_can( 'edit_user', $profileuser->ID ) )
+			return;
+		?>
+
+		<h3><?php esc_html_e( 'WePay Account', 'awpo2' ); ?></h3>
+
+		<table class="form-table">
+			<tbody>
+				<tr>
+					<th><label for="wepay_access_token"><?php esc_html_e( 'Access Token', 'awpo2' ); ?></label></th>
+					<td>
+						<input type="text" name="wepay_access_token" class="regular-text code" value="<?php echo esc_attr( $profileuser->__get( 'wepay_access_token' ) ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th><label for="wepay_account_id"><?php esc_html_e( 'Account ID', 'awpo2' ); ?></label></th>
+					<td>
+						<input type="text" name="wepay_account_id" class="regular-text code" value="<?php echo esc_attr( $profileuser->__get( 'wepay_account_id' ) ); ?>" />
+					</td>
+				</tr>
+			</tbody>
+		</table>
+		<?php
+	}
+
+	/**
+	 * Manually set the WePay information.
+	 *
+	 * @since Astoundify WePay oAuth2 0.2
+	 *
+	 * @param WP_User $profileuser User data
+	 * @return bool Always false
+	 */
+	function profile_user_meta_update( $profileuser_id ) {
+		if ( ! current_user_can( 'edit_user', $profileuser_id ) )
+			return;
+		
+		$access_token = esc_attr( $_POST[ 'wepay_access_token' ] );
+		$account_id   = esc_attr( $_POST[ 'wepay_account_id' ] );
+
+		update_user_meta( $profileuser_id, 'wepay_access_token', $access_token );
+		update_user_meta( $profileuser_id, 'wepay_account_id', $account_id );
 	}
 
 	/**
@@ -294,6 +385,48 @@ function awpo2_metabox_campaign_info_after_wepay_creds( $campaign ) {
 add_action( 'atcf_metabox_campaign_info_after', 'awpo2_metabox_campaign_info_after_wepay_creds' );
 
 /**
+ * Add a link to create an account on WePay, or link to their current one.
+ *
+ * @since Astoundify WePay oAuth2 0.2
+ *
+ * @return void
+ */
+function awpo2_atcf_shortcode_profile() {
+	$awpo2 = awpo2();
+	$user  = wp_get_current_user();
+?>
+	<h3 class="atcf-profile-section wepay"><?php _e( 'WePay Account', 'awpo2' ); ?></h3>
+
+	<?php if ( ! $user->__isset( 'wepay_account_id' ) ) : ?>
+
+	<p><?php printf( '<a href="%s" class="button wepay-oauth-create-account">', $awpo2->send_to_wepay_url() ); ?><?php _e( 'Create an account on WePay &rarr;', 'awpo2' ); ?></a></p>
+
+	<?php else : ?>
+		
+		<p><?php printf( __( 'Funds will be sent to your <a href="%s">WePay</a> account.', 'awpo2' ), esc_url( $user->__get( 'wepay_account_uri' ) ) ); ?></p>
+
+	<?php endif; ?>
+<?php
+}
+add_action( 'atcf_shortcode_profile', 'awpo2_atcf_shortcode_profile' );
+
+/**
+ * If the profile page has been redirected from WePay, show a message.
+ *
+ * @since Astoundify WePay oAuth2 0.2
+ *
+ * @return void
+ */
+function awpo2_message_atcf_shortcode_profile() {
+	if ( ! isset( $_GET[ 'code' ] ) )
+		return;
+	?>
+		<p class="edd_success"><?php echo esc_attr( __( 'Your WePay account has been associated with your account.', 'awpo2' ) ); ?></p>	
+	<?php
+}
+add_action( 'atcf_shortcode_profile', 'awpo2_message_atcf_shortcode_profile', 1 );
+
+/**
  * Figure out the WePay account info to send the funds to.
  *
  * @since Astoundify WePay oAuth2 0.1
@@ -345,36 +478,6 @@ function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds, $payment_id ) {
 	return $creds;
 }
 add_filter( 'edd_wepay_get_api_creds', 'awpo2_gateway_wepay_edd_wepay_get_api_creds', 10, 2 );
-
-/**
- * Additional WePay settings needed by Crowdfunding
- *
- * @since Astoundify WePay oAuth2 0.1
- *
- * @param array $settings Existing WePay settings
- * @return array $settings Modified WePay settings
- */
-function awpo2_gateway_wepay_settings( $settings ) {
-
-	$settings[ 'wepay_app_fee' ] = array(
-		'id' => 'wepay_app_fee',
-		'name'  => __( 'Site Fee', 'awpo2' ),
-		'desc'  => '% <span class="description">' . __( 'The percentage of each pledge amount the site keeps (no more than 20%)', 'awpo2' ) . '</span>',
-		'type'  => 'text',
-		'size'  => 'small'
-	);
-
-	$settings[ 'wepay_flexible_fee' ] = array(
-		'id'   => 'wepay_flexible_fee',
-		'name' => __( 'Additional Flexible Fee', 'epap' ),
-		'desc' => __( '%. <span class="description">If a campaign is flexible, increase commission by this percent. Total can not be more than 20%</span>', 'atcf' ),
-		'type' => 'text',
-		'size' => 'small'
-	);
-
-	return $settings;
-}
-add_filter( 'edd_gateway_wepay_settings', 'awpo2_gateway_wepay_settings' );
 
 /**
  * Calculate a fee to keep for the site.
