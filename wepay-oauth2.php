@@ -337,20 +337,46 @@ add_action( 'init', 'awpo2' );
  *
  * @return void
  */
-function awpo2_shortcode_submit_field_wepay_creds( $atts, $campaign ) {
+function awpo2_shortcode_submit_field_wepay_creds( $fields ) {
 	$user = wp_get_current_user();
 
 	$access_token = $user->__get( 'wepay_access_token' );
 	$account_id   = $user->__get( 'wepay_account_id' );
 	$account_uri  = $user->__get( 'wepay_account_uri' );
-?>
-	<p><?php printf( __( 'Funds will be sent to your <a href="%s">WePay</a> account.', 'awpo2' ), $account_uri ); ?></p>
 
-	<input type="hidden" name="wepay_account_id" id="wepay_account_id" value="<?php echo $account_id; ?>" />
-	<input type="hidden" name="wepay_access_token" id="wepay_access_token" value="<?php echo $access_token; ?>" />
-<?php
+	$fields[ 'wepay_acccount_uri' ] = array(
+		'label'       => sprintf( __( 'Funds will be sent to your <a href="%s">WePay</a> account.', 'awpo2' ), $account_uri ),
+		'default'     => $account_uri,
+		'type'        => 'hidden',
+		'editable'    => false,
+		'placeholder' => null,
+		'required'    => false,
+		'priority'    => 36
+	);
+
+	$fields[ 'wepay_account_id' ] = array(
+		'label'       => null,
+		'default'     => $account_id,
+		'type'        => 'hidden',
+		'editable'    => false,
+		'placeholder' => null,
+		'required'    => false,
+		'priority'    => 36
+	);
+
+	$fields[ 'wepay_access_token' ] = array(
+		'label'       => null,
+		'default'     => $access_token,
+		'type'        => 'hidden',
+		'editable'    => false,
+		'placeholder' => null,
+		'required'    => false,
+		'priority'    => 36
+	);
+
+	return $fields;
 }
-add_action( 'atcf_shortcode_submit_fields', 'awpo2_shortcode_submit_field_wepay_creds', 105, 2 );
+add_filter( 'atcf_shortcode_submit_fields', 'awpo2_shortcode_submit_field_wepay_creds', 105, 2 );
 
 /**
  * WePay field on backend.
