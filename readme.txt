@@ -7,7 +7,7 @@ Contributors: SpencerFinnell
 Tags: easy digital downloads, downloads, wepay, gateway
 Requires at least: 3.5
 Tested up to: 3.5
-Stable Tag: 0.1
+Stable Tag: 0.2
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -45,6 +45,11 @@ The following plugins must be installed and properly configured before using thi
 In the Payment Gateways settings, simply fill out the Client ID and the Client Secret given to you by WePay in your API Application. The Access ID and Access Token will be added to each campaign when the campaign author creates their WePay account through the submission process.
 
 == Changelog ==
+
+= 0.2: August 29, 2013 =
+
+* New: Update WePay information through user profiles.
+* Fix: Keep up to date with the Crowdfunding plugin.
 
 = 0.1: July 30, 2013 =
 
