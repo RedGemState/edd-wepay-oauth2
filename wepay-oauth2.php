@@ -97,6 +97,7 @@ final class Astoundify_WePay_oAuth2 {
 		add_action( 'edit_user_profile', array( $this, 'profile_user_meta' ) );
 		add_action( 'show_user_profile', array( $this, 'profile_user_meta' ) );
 		add_action( 'personal_options_update', array( $this, 'profile_user_meta_update' ) );
+		add_action( 'edit_user_profile_update', array( $this, 'profile_user_meta_update' ) );
 	}
 
 	/**
@@ -478,7 +479,7 @@ function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds, $payment_id ) {
 		$meta = edd_get_payment_meta( $_GET[ 'payment_id' ] );
 		$cart_items = maybe_unserialize( $meta[ 'downloads' ] );
 	} else if ( $payment_id ) {
-		$meta = edd_get_payment_meta( $payment_id);
+		$meta = edd_get_payment_meta( $payment_id );
 		$cart_items = maybe_unserialize( $meta[ 'downloads' ] );
 	}
 
@@ -491,10 +492,10 @@ function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds, $payment_id ) {
 		break;
 	}
 
-	$campaign     = atcf_get_campaign( $campaign_id );
-
-	if ( 0 == $campaign->ID )
+	if ( 0 == get_post( $campaign_id ) )
 		return $creds;
+
+	$campaign     = atcf_get_campaign( $campaign_id );
 
 	$user         = get_user_by( 'id', get_post_field( 'post_author', $campaign->ID ) );
 
