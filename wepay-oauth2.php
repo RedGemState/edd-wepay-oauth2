@@ -472,11 +472,14 @@ function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds, $payment_id ) {
 	if ( empty( $cart_items ) && ! empty( $session ) ) {
 		$cart_items = $session[ 'downloads' ];
 	} else if ( isset( $_GET[ 'edd-action' ] ) && 'charge_wepay_preapproval' == $_GET[ 'edd-action' ] && isset ( $_GET[ 'payment_id' ] ) ) {
-		$cart_iterms = edd_get_payment_meta_downloads( absint( $_GET[ 'payment_id' ] ) );
+		$meta = edd_get_payment_meta( $_GET[ 'payment_id' ] );
+		$cart_items = maybe_unserialize( $meta[ 'downloads' ] );
 	} else if ( isset( $_GET[ 'edd-action' ] ) && 'cancel_wepay_preapproval' == $_GET[ 'edd-action' ] && isset ( $_GET[ 'payment_id' ] ) ) {
-		$cart_iterms = edd_get_payment_meta_downloads( absint( $_GET[ 'payment_id' ] ) );
+		$meta = edd_get_payment_meta( $_GET[ 'payment_id' ] );
+		$cart_items = maybe_unserialize( $meta[ 'downloads' ] );
 	} else if ( $payment_id ) {
-		$cart_iterms = edd_get_payment_meta_downloads( $payment_id );
+		$meta = edd_get_payment_meta( $payment_id);
+		$cart_items = maybe_unserialize( $meta[ 'downloads' ] );
 	}
 
 	if ( ! $cart_items || empty( $cart_items ) )
