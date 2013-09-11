@@ -85,7 +85,7 @@ final class Astoundify_WePay_oAuth2 {
 	 * @return void
 	 */
 	private function setup_actions() {
-		add_filter( 'atcf_shortcode_submit_hide', array( $this, 'shortcode_submit_hide' ) );
+		add_filter( 'atcf_shortcode_submit_hide', array( $this, 'shortcode_submit_hide' ), 10, 2 );
 		add_action( 'template_redirect', array( $this, 'wepay_listener' ) );
 
 		if ( ! is_admin() )
@@ -180,8 +180,11 @@ final class Astoundify_WePay_oAuth2 {
 	 *
 	 * @return boolean
 	 */
-	public function shortcode_submit_hide() {
+	public function shortcode_submit_hide( $hidden, $atts ) {
 		$user = wp_get_current_user();
+
+		if ( $atts[ 'editing' ] )
+			return false;
 
 		if ( ! $user->wepay_account_id ) {
 			add_action( 'atcf_shortcode_submit_hidden', array( $this, 'send_to_wepay' ) );
@@ -377,7 +380,7 @@ function awpo2_shortcode_submit_field_wepay_creds( $fields ) {
 
 	return $fields;
 }
-add_filter( 'atcf_shortcode_submit_fields', 'awpo2_shortcode_submit_field_wepay_creds', 105, 2 );
+add_filter( 'atcf_shortcode_submit_fields', 'awpo2_shortcode_submit_field_wepay_creds' );
 
 /**
  * WePay field on backend.
@@ -492,7 +495,7 @@ function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds, $payment_id ) {
 		break;
 	}
 
-	if ( 0 == get_post( $campaign_id ) )
+	if ( 0 == get_post( $campaign_id )->ID )
 		return $creds;
 
 	$campaign     = atcf_get_campaign( $campaign_id );
