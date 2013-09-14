@@ -5,7 +5,7 @@
  * Description: Enable users to create accounts on WePay automatically.
  * Author:      Astoundify
  * Author URI:  http://astoundify.com
- * Version:     0.2
+ * Version:     0.3
  * Text Domain: awpo2
  */
 
@@ -507,6 +507,8 @@ function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds, $payment_id ) {
 
 	$creds[ 'access_token' ] = trim( $access_token );
 	$creds[ 'account_id' ]   = trim( $account_id );
+
+	//wp_die( print_r( $creds ) );
 
 	return $creds;
 }

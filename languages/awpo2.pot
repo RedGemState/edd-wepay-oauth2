@@ -1,8 +1,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: Easy Digital Downloads - WePay oAuth2 for Crowdfunding\n"
-"POT-Creation-Date: 2013-07-30 09:03-0500\n"
-"PO-Revision-Date: 2013-07-30 09:03-0500\n"
+"POT-Creation-Date: 2013-09-14 12:41-0500\n"
+"PO-Revision-Date: 2013-09-14 12:41-0500\n"
 "Last-Translator: Spencer Finnell <spencerfinnell@gmail.com>\n"
 "Language-Team: Astoundify <contact@astoundify.com>\n"
 "MIME-Version: 1.0\n"
@@ -16,33 +16,64 @@ msgstr ""
 "X-Poedit-Basepath: .\n"
 "X-Poedit-SearchPath-0: ..\n"
 
-#: ../wepay-oauth2.php:167
+#: ../wepay-oauth2.php:114
+msgid "Site Fee"
+msgstr ""
+
+#: ../wepay-oauth2.php:115
+msgid "The percentage of each pledge amount the site keeps (no more than 20%)"
+msgstr ""
+
+#: ../wepay-oauth2.php:122
+msgid "Additional Flexible Fee"
+msgstr ""
+
+#: ../wepay-oauth2.php:123
+msgid ""
+"%. <span class=\"description\">If a campaign is flexible, increase "
+"commission by this percent. Total can not be more than 20%</span>"
+msgstr ""
+
+#: ../wepay-oauth2.php:206
 msgid ""
 "Before you may begin, you must first create an account on our payment "
 "processing service, <a href=\"http://wepay.com\">WePay</a>."
 msgstr ""
 
-#: ../wepay-oauth2.php:169
+#: ../wepay-oauth2.php:208 ../wepay-oauth2.php:432
 msgid "Create an account on WePay &rarr;"
 msgstr ""
 
-#: ../wepay-oauth2.php:256
+#: ../wepay-oauth2.php:252 ../wepay-oauth2.php:428
+msgid "WePay Account"
+msgstr ""
+
+#: ../wepay-oauth2.php:257
+msgid "Access Token"
+msgstr ""
+
+#: ../wepay-oauth2.php:263
+msgid "Account ID"
+msgstr ""
+
+#: ../wepay-oauth2.php:352 ../wepay-oauth2.php:436
 #, php-format
 msgid "Funds will be sent to your <a href=\"%s\">WePay</a> account."
 msgstr ""
 
-#: ../wepay-oauth2.php:281
+#: ../wepay-oauth2.php:402
+#, php-format
+msgid "Funds will be sent to %s <a href=\"%s\">WePay</a> account."
+msgstr ""
+
+#: ../wepay-oauth2.php:405
 msgid "WePay Account ID:"
 msgstr ""
 
-#: ../wepay-oauth2.php:286
+#: ../wepay-oauth2.php:410
 msgid "WePay Access Token:"
 msgstr ""
 
-#: ../wepay-oauth2.php:373
-msgid "Site Fee"
-msgstr ""
-
-#: ../wepay-oauth2.php:374
-msgid "The percentage of each pledge amount the site keeps (no more than 20%)"
+#: ../wepay-oauth2.php:454
+msgid "Your WePay account has been associated with your account."
 msgstr ""

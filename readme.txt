@@ -46,6 +46,10 @@ In the Payment Gateways settings, simply fill out the Client ID and the Client S
 
 == Changelog ==
 
+= 0.3: September 14, 2013 =
+
+* Fix: Various improvements and udpates to stay compatible with versions 1.7+ of Crowdfunding.
+
 = 0.2: August 29, 2013 =
 
 * New: Update WePay information through user profiles.
