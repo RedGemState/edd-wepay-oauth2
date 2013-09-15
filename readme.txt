@@ -7,7 +7,7 @@ Contributors: SpencerFinnell
 Tags: easy digital downloads, downloads, wepay, gateway
 Requires at least: 3.5
 Tested up to: 3.5
-Stable Tag: 0.2
+Stable Tag: 0.3
 License: GPLv3
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
