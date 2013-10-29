@@ -12,6 +12,9 @@
 // Exit if accessed directly
 if ( ! defined( 'ABSPATH' ) ) exit;
 
+if ( ! edd_is_gateway_active( 'wepay' ) )
+	return;
+
 /**
  * Main WePay oAuth2 Crowdfunding Class
  *
@@ -473,17 +476,16 @@ function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds, $payment_id ) {
 	/**
 	 * No cart items, check session
 	 */
-	if ( empty( $cart_items ) && ! empty( $session ) ) {
-		$cart_items = $session[ 'downloads' ];
-	} else if ( isset( $_GET[ 'edd-action' ] ) && 'charge_wepay_preapproval' == $_GET[ 'edd-action' ] && isset ( $_GET[ 'payment_id' ] ) ) {
-		$meta = edd_get_payment_meta( $_GET[ 'payment_id' ] );
-		$cart_items = maybe_unserialize( $meta[ 'downloads' ] );
+	if ( isset( $_GET[ 'edd-action' ] ) && 'charge_wepay_preapproval' == $_GET[ 'edd-action' ] && isset ( $_GET[ 'payment_id' ] ) ) {
+		$cart_items = edd_get_payment_meta_cart_details( $_GET[ 'payment_id' ] );
 	} else if ( isset( $_GET[ 'edd-action' ] ) && 'cancel_wepay_preapproval' == $_GET[ 'edd-action' ] && isset ( $_GET[ 'payment_id' ] ) ) {
 		$meta = edd_get_payment_meta( $_GET[ 'payment_id' ] );
 		$cart_items = maybe_unserialize( $meta[ 'downloads' ] );
 	} else if ( $payment_id ) {
 		$meta = edd_get_payment_meta( $payment_id );
 		$cart_items = maybe_unserialize( $meta[ 'downloads' ] );
+	} else {
+		$cart_items = $session[ 'downloads' ];
 	}
 
 	if ( ! $cart_items || empty( $cart_items ) )
@@ -508,8 +510,6 @@ function awpo2_gateway_wepay_edd_wepay_get_api_creds( $creds, $payment_id ) {
 	$creds[ 'access_token' ] = trim( $access_token );
 	$creds[ 'account_id' ]   = trim( $account_id );
 
-	//wp_die( print_r( $creds ) );
-
 	return $creds;
 }
 add_filter( 'edd_wepay_get_api_creds', 'awpo2_gateway_wepay_edd_wepay_get_api_creds', 10, 2 );
@@ -529,7 +529,7 @@ function awpo2_gateway_wepay_edd_wepay_checkout_args( $args ) {
 
 	$fee = absint( $edd_options[ 'wepay_app_fee' ] );
 
-	if ( '' != $edd_optinos[ 'wepay_flexible_fee' ] ) {
+	if ( '' != $edd_options[ 'wepay_flexible_fee' ] ) {
 		$fee = $fee + $edd_options[ 'wepay_flexible_fee' ];
 	}
 
