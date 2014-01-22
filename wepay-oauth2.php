@@ -77,7 +77,7 @@ final class Astoundify_WePay_oAuth2 {
 
 		$this->lang_dir     = apply_filters( 'awpo2_lang_dir',     trailingslashit( $this->plugin_dir . 'languages' ) );
 
-		$this->domain       = 'awpo2'; 
+		$this->domain       = 'awpo2';
 	}
 
 	/**
@@ -89,11 +89,11 @@ final class Astoundify_WePay_oAuth2 {
 	 */
 	private function setup_actions() {
 		add_filter( 'atcf_shortcode_submit_hide', array( $this, 'shortcode_submit_hide' ), 10, 2 );
-		add_action( 'template_redirect', array( $this, 'wepay_listener' ) );
+		add_action( 'edd_wepay_create_account', array( $this, 'wepay_create_account' ) );
+		add_action( 'user_register', array( $this, 'wepay_create_account' ) );
 
 		if ( ! is_admin() )
 			return;
-
 
 		add_filter( 'edd_gateway_wepay_settings', array( $this, 'gateway_settings' ) );
 
@@ -132,18 +132,14 @@ final class Astoundify_WePay_oAuth2 {
 	}
 
 	/**
-	 * When coming back from WePay, add the newly created
-	 * tokens to the user meta.
+	 * Create an account on WePay
 	 *
-	 * @since Astoundify WePay oAuth2 0.1
+	 * @since Astoundify WePay oAuth2 0.4
 	 *
 	 * @return void
 	 */
-	function wepay_listener() {
+	public function wepay_create_account( $user = null ) {
 		global $edd_options, $edd_wepay;
-
-		if ( ! isset( $_GET[ 'code' ] ) )
-			return;
 
 		if ( ! class_exists( 'WePay' ) )
 			require ( $this->plugin_dir .  '/vendor/wepay.php' );
@@ -151,27 +147,47 @@ final class Astoundify_WePay_oAuth2 {
 		$this->creds = $edd_wepay->get_api_credentials();
 
 		if( edd_is_test_mode() )
-			Wepay::useStaging( $this->creds['client_id'], $this->creds['client_secret'] );
+			Wepay::useStaging( $this->creds[ 'client_id' ], $this->creds[ 'client_secret' ] );
 		else
-			Wepay::useProduction( $this->creds['client_id'], $this->creds['client_secret'] );
+			Wepay::useProduction( $this->creds[ 'client_id' ], $this->creds[ 'client_secret' ] );
 
-		$info = WePay::getToken( $_GET[ 'code' ], get_permalink() );
-		
-		if ( $info ) {
-			$user         = wp_get_current_user();
-			$access_token = $info->access_token;
-			$wepay        = new WePay( $access_token );
+		$wepay = new WePay(null);
 
-			$response = $wepay->request( 'account/create/', array(
-				'name'          => $user->user_email,
-				'description'   => $user->user_nicename
+		if ( ! $user ) {
+			$user = wp_get_current_user();
+		} else {
+			$user = new WP_User( $user );
+		}
+
+		try {
+			$username   = explode( '@', $user->user_email );
+
+			$first_name = $user->first_name ? $user->first_name : $username[0];
+			$last_name  = $user->last_name  ? $user->last_name  : $username[0];
+
+			$response = $wepay->request( 'user/register', array(
+				'client_id'       => $this->creds[ 'client_id' ],
+				'client_secret'   => $this->creds[ 'client_secret' ],
+				'email'           => $user->user_email,
+				'scope'           => 'manage_accounts,collect_payments,preapprove_payments,send_money',
+				'first_name'      => $first_name,
+				'last_name'       => $last_name,
+				'original_ip'     => $_SERVER[ 'REMOTE_ADDR' ],
+				'original_device' => $_SERVER[ 'HTTP_USER_AGENT' ]
 			) );
 
-			update_user_meta( $user->ID, 'wepay_account_id', $response->account_id );
-			update_user_meta( $user->ID, 'wepay_access_token', $access_token );
-			update_user_meta( $user->ID, 'wepay_account_uri', $response->account_uri );
-		} else {
-			
+			if ( $response->user_id ) {
+				/*$wepay->request( 'user/resend_confirmation', array(
+					'email_message' => 'test'
+				) );*/
+
+				update_user_meta( $user->ID, 'wepay_account_id', $response->user_id );
+				update_user_meta( $user->ID, 'wepay_access_token', $response->access_token );
+			} else {
+				wp_die( print_r( $response ) );
+			}
+		} catch( WePayException $e ) {
+			wp_die( $e->getMessage() );
 		}
 	}
 
@@ -208,35 +224,11 @@ final class Astoundify_WePay_oAuth2 {
 	public function send_to_wepay() {
 		echo '<p>' . sprintf(  __( 'Before you may begin, you must first create an account on our payment processing service, <a href="http://wepay.com">WePay</a>.', 'awpo2' ) ) . '</p>';
 
-		echo '<p>' . sprintf( '<a href="%s" class="button wepay-oauth-create-account">', $this->send_to_wepay_url() ) . __( 'Create an account on WePay &rarr;', 'awpo2' ) . '</a></p>';
+		echo '<p>' . sprintf( '<a href="%s" class="button wepay-oauth-create-account">', $this->create_account_url() ) . __( 'Create an account on WePay &rarr;', 'awpo2' ) . '</a></p>';
 	}
 
-	/**
-	 * Create the proper URL for sending to WePay
-	 *
-	 * @since Astoundify WePay oAuth2 0.1
-	 *
-	 * @return string $uri
-	 */
-	public function send_to_wepay_url( $redirect = null ) {
-		global $edd_wepay;
-
-		if ( ! class_exists( 'WePay' ) )
-			require ( $this->plugin_dir .  '/vendor/wepay.php' );
-
-		$this->creds = $edd_wepay->get_api_credentials();
-
-		if( edd_is_test_mode() )
-			Wepay::useStaging( $this->creds['client_id'], $this->creds['client_secret'] );
-		else
-			Wepay::useProduction( $this->creds['client_id'], $this->creds['client_secret'] );
-
-		if ( ! $redirect )
-			$redirect = get_permalink();
-
-		$uri = WePay::getAuthorizationUri( array( 'manage_accounts', 'collect_payments', 'preapprove_payments', 'send_money' ), $redirect );
-
-		return esc_url( $uri );
+	public function create_account_url() {
+		return add_query_arg( array( 'edd_action' => 'wepay_create_account' ), get_permalink( edd_get_option( 'submit_page' ) ) );
 	}
 
 	/**
@@ -284,7 +276,7 @@ final class Astoundify_WePay_oAuth2 {
 	function profile_user_meta_update( $profileuser_id ) {
 		if ( ! current_user_can( 'edit_user', $profileuser_id ) )
 			return;
-		
+
 		$access_token = esc_attr( $_POST[ 'wepay_access_token' ] );
 		$account_id   = esc_attr( $_POST[ 'wepay_account_id' ] );
 
@@ -335,55 +327,7 @@ final class Astoundify_WePay_oAuth2 {
 function awpo2() {
 	return Astoundify_WePay_oAuth2::instance();
 }
-add_action( 'init', 'awpo2' );
-
-/**
- * WePay fields on frontend submit and edit.
- *
- * @since Astoundify WePay oAuth2 0.1
- *
- * @return void
- */
-function awpo2_shortcode_submit_field_wepay_creds( $fields ) {
-	$user = wp_get_current_user();
-
-	$access_token = $user->__get( 'wepay_access_token' );
-	$account_id   = $user->__get( 'wepay_account_id' );
-	$account_uri  = $user->__get( 'wepay_account_uri' );
-
-	$fields[ 'wepay_acccount_uri' ] = array(
-		'label'       => sprintf( __( 'Funds will be sent to your <a href="%s">WePay</a> account.', 'awpo2' ), $account_uri ),
-		'default'     => $account_uri,
-		'type'        => 'hidden',
-		'editable'    => false,
-		'placeholder' => null,
-		'required'    => false,
-		'priority'    => 36
-	);
-
-	$fields[ 'wepay_account_id' ] = array(
-		'label'       => null,
-		'default'     => $account_id,
-		'type'        => 'hidden',
-		'editable'    => false,
-		'placeholder' => null,
-		'required'    => false,
-		'priority'    => 36
-	);
-
-	$fields[ 'wepay_access_token' ] = array(
-		'label'       => null,
-		'default'     => $access_token,
-		'type'        => 'hidden',
-		'editable'    => false,
-		'placeholder' => null,
-		'required'    => false,
-		'priority'    => 36
-	);
-
-	return $fields;
-}
-add_filter( 'atcf_shortcode_submit_fields', 'awpo2_shortcode_submit_field_wepay_creds' );
+add_action( 'plugins_loaded', 'awpo2' );
 
 /**
  * WePay field on backend.
@@ -435,7 +379,7 @@ function awpo2_atcf_shortcode_profile() {
 	<p><?php printf( '<a href="%s" class="button wepay-oauth-create-account">', $awpo2->send_to_wepay_url() ); ?><?php _e( 'Create an account on WePay &rarr;', 'awpo2' ); ?></a></p>
 
 	<?php else : ?>
-		
+
 		<p><?php printf( __( 'Funds will be sent to your <a href="%s">WePay</a> account.', 'awpo2' ), esc_url( $user->__get( 'wepay_account_uri' ) ) ); ?></p>
 
 	<?php endif; ?>
@@ -454,7 +398,7 @@ function awpo2_message_atcf_shortcode_profile() {
 	if ( ! isset( $_GET[ 'code' ] ) )
 		return;
 	?>
-		<p class="edd_success"><?php echo esc_attr( __( 'Your WePay account has been associated with your account.', 'awpo2' ) ); ?></p>	
+		<p class="edd_success"><?php echo esc_attr( __( 'Your WePay account has been associated with your account.', 'awpo2' ) ); ?></p>
 	<?php
 }
 add_action( 'atcf_shortcode_profile', 'awpo2_message_atcf_shortcode_profile', 1 );
