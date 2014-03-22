@@ -77,7 +77,7 @@ final class Astoundify_WePay_oAuth2 {
 
 		$this->lang_dir     = apply_filters( 'awpo2_lang_dir',     trailingslashit( $this->plugin_dir . 'languages' ) );
 
-		$this->domain       = 'awpo2'; 
+		$this->domain       = 'awpo2';
 	}
 
 	/**
@@ -156,7 +156,7 @@ final class Astoundify_WePay_oAuth2 {
 			Wepay::useProduction( $this->creds['client_id'], $this->creds['client_secret'] );
 
 		$info = WePay::getToken( $_GET[ 'code' ], get_permalink() );
-		
+
 		if ( $info ) {
 			$user         = wp_get_current_user();
 			$access_token = $info->access_token;
@@ -171,7 +171,7 @@ final class Astoundify_WePay_oAuth2 {
 			update_user_meta( $user->ID, 'wepay_access_token', $access_token );
 			update_user_meta( $user->ID, 'wepay_account_uri', $response->account_uri );
 		} else {
-			
+
 		}
 	}
 
@@ -284,7 +284,7 @@ final class Astoundify_WePay_oAuth2 {
 	function profile_user_meta_update( $profileuser_id ) {
 		if ( ! current_user_can( 'edit_user', $profileuser_id ) )
 			return;
-		
+
 		$access_token = esc_attr( $_POST[ 'wepay_access_token' ] );
 		$account_id   = esc_attr( $_POST[ 'wepay_account_id' ] );
 
@@ -435,7 +435,7 @@ function awpo2_atcf_shortcode_profile() {
 	<p><?php printf( '<a href="%s" class="button wepay-oauth-create-account">', $awpo2->send_to_wepay_url() ); ?><?php _e( 'Create an account on WePay &rarr;', 'awpo2' ); ?></a></p>
 
 	<?php else : ?>
-		
+
 		<p><?php printf( __( 'Funds will be sent to your <a href="%s">WePay</a> account.', 'awpo2' ), esc_url( $user->__get( 'wepay_account_uri' ) ) ); ?></p>
 
 	<?php endif; ?>
@@ -454,7 +454,7 @@ function awpo2_message_atcf_shortcode_profile() {
 	if ( ! isset( $_GET[ 'code' ] ) )
 		return;
 	?>
-		<p class="edd_success"><?php echo esc_attr( __( 'Your WePay account has been associated with your account.', 'awpo2' ) ); ?></p>	
+		<p class="edd_success"><?php echo esc_attr( __( 'Your WePay account has been associated with your account.', 'awpo2' ) ); ?></p>
 	<?php
 }
 add_action( 'atcf_shortcode_profile', 'awpo2_message_atcf_shortcode_profile', 1 );
@@ -524,9 +524,23 @@ function awpo2_gateway_wepay_edd_wepay_checkout_args( $args ) {
 	if ( '' == $edd_options[ 'wepay_app_fee' ] )
 		return $args;
 
+	$session     = edd_get_purchase_session();
+	$campaign_id = null;
+	$cart_items  = $session[ 'downloads' ];
+
+	if ( ! $cart_items || empty( $cart_items ) )
+		return $args;
+
+	foreach ( $cart_items as $item ) {
+		$campaign_id = $item[ 'id' ];
+
+		break;
+	}
+
+	$campaign = atcf_get_campaign( $campaign_id );
 	$fee = absint( $edd_options[ 'wepay_app_fee' ] );
 
-	if ( '' != $edd_options[ 'wepay_flexible_fee' ] ) {
+	if ( ( '' != $edd_options[ 'wepay_flexible_fee' ] ) && ( 'flexible' == $campaign->type() ) ) {
 		$fee = $fee + $edd_options[ 'wepay_flexible_fee' ];
 	}
 
