@@ -12,9 +12,6 @@
 // Exit if accessed directly
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-if ( ! edd_is_gateway_active( 'wepay' ) )
-	return;
-
 /**
  * Main WePay oAuth2 Crowdfunding Class
  *
@@ -44,6 +41,9 @@ final class Astoundify_WePay_oAuth2 {
 	 */
 	public static function instance() {
 		if ( ! class_exists( 'ATCF_CrowdFunding' ) || ! class_exists( 'Easy_Digital_Downloads' ) )
+			return;
+
+		if ( ! edd_is_gateway_active( 'wepay' ) )
 			return;
 
 		if ( ! isset ( self::$instance ) ) {
