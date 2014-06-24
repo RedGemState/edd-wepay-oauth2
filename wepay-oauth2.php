@@ -5,7 +5,7 @@
  * Description: Enable users to create accounts on WePay automatically.
  * Author:      Astoundify
  * Author URI:  http://astoundify.com
- * Version:     0.3
+ * Version:     0.4
  * Text Domain: awpo2
  */
 
