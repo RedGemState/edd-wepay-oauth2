@@ -169,7 +169,6 @@ final class Astoundify_WePay_oAuth2 {
 
 			update_user_meta( $user->ID, 'wepay_account_id', $response->account_id );
 			update_user_meta( $user->ID, 'wepay_access_token', $access_token );
-			update_user_meta( $user->ID, 'wepay_account_uri', $response->account_uri );
 		} else {
 
 		}
